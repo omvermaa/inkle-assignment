@@ -12,6 +12,20 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTax, setSelectedTax] = useState(null);
 
+  // Helper to format API date (ISO string) to "Jan 20, 2025"
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Jan 20, 2025'; // Fallback
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -20,14 +34,19 @@ function App() {
           api.getCountries()
         ]);
 
-        // Enrich API data with missing design fields (Gender, Date)
-        const enrichedTaxes = taxesRes.map(tax => ({
+        // INTELLIGENT MAPPING:
+        // Use real API fields if they exist.
+        // If not, fall back to the random mock data.
+        const processedTaxes = taxesRes.map(tax => ({
           ...tax,
-          gender: Math.random() > 0.5 ? 'Male' : 'Female',
-          requestDate: 'Jan 20, 2025' // Hardcoded to match screenshot style
+          // Check for 'gender', otherwise mock it
+          gender: tax.gender || (Math.random() > 0.5 ? 'Male' : 'Female'),
+          
+          // Check for 'requestDate' OR 'createdAt' (common in mockapi), otherwise mock it
+          requestDate: formatDate(tax.requestDate || tax.createdAt)
         }));
 
-        setTaxes(enrichedTaxes);
+        setTaxes(processedTaxes);
         setCountries(countriesRes);
       } catch (error) {
         console.error("Failed to fetch data", error);
